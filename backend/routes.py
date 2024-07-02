@@ -16,6 +16,7 @@ data: list = json.load(open(json_url))
 def health():
     return jsonify(dict(status="OK")), 200
 
+
 ######################################################################
 # COUNT THE NUMBER OF PICTURES
 ######################################################################
@@ -35,7 +36,8 @@ def count():
 ######################################################################
 @app.route("/picture", methods=["GET"])
 def get_pictures():
-    pass
+    return jsonify(data), 200
+
 
 ######################################################################
 # GET A PICTURE
@@ -44,7 +46,11 @@ def get_pictures():
 
 @app.route("/picture/<int:id>", methods=["GET"])
 def get_picture_by_id(id):
-    pass
+    picture = next((p for p in data if p["id"] == id), None)
+    if picture:
+        return jsonify(picture), 200
+
+    return {"message": "Picture not found"}, 404
 
 
 ######################################################################
@@ -52,7 +58,20 @@ def get_picture_by_id(id):
 ######################################################################
 @app.route("/picture", methods=["POST"])
 def create_picture():
-    pass
+    picture = request.get_json()
+    if not picture:
+        return {"message": "No input data provided"}, 400
+
+    id = picture.get("id")
+    if not id:
+        return {"message": "No id provided"}, 400
+
+    if next((p for p in data if p["id"] == id), None):
+        return {"message": f"picture with id {id} already present"}, 302
+
+    data.append(picture)
+    return jsonify(picture), 201
+
 
 ######################################################################
 # UPDATE A PICTURE
@@ -61,11 +80,29 @@ def create_picture():
 
 @app.route("/picture/<int:id>", methods=["PUT"])
 def update_picture(id):
-    pass
+    picture = request.get_json()
+    if not picture:
+        return {"message": "No input data provided"}, 400
+
+    if picture["id"] != id:
+        return {"message": "id in URL does not match id in data"}, 400
+
+    picture = next((p for p in data if p["id"] == id), None)
+    if not picture:
+        return {"message": "Picture not found"}, 404
+
+    picture.update(picture)
+    return jsonify(picture), 200
+
 
 ######################################################################
 # DELETE A PICTURE
 ######################################################################
 @app.route("/picture/<int:id>", methods=["DELETE"])
 def delete_picture(id):
-    pass
+    picture = next((p for p in data if p["id"] == id), None)
+    if not picture:
+        return {"message": "Picture not found"}, 404
+
+    data.remove(picture)
+    return make_response("", 204)
